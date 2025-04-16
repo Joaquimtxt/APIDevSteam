@@ -12,12 +12,23 @@ namespace APIDevSteam.Data
         }
 
         //DbSet
+        public DbSet<Jogo> Jogos { get; set; }
+        public DbSet<Categoria> Categorias { get; set; }
+        public DbSet<JogoCategoria> JogosCategorias { get; set; }
+        public DbSet<JogoMidia> JogosMidias { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            //Tabelas
+            modelBuilder.Entity<Jogo>().ToTable("Jogos");
+            modelBuilder.Entity<Categoria>().ToTable("Categorias");
+            modelBuilder.Entity<JogoCategoria>().ToTable("JogosCategorias");
+            modelBuilder.Entity<JogoMidia>().ToTable("JogosMidias");
 
         }
-        //Tabelas
+
+
     }
 }
