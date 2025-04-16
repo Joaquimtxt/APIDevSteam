@@ -1,0 +1,6 @@
+@APIDevSteam_HostAddress = http://localhost:5088
+
+GET {{APIDevSteam_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
