@@ -125,28 +125,34 @@ namespace APIDevSteam.Controllers
                 return NotFound("Cupom não encontrado.");
             }
 
-            // Verifica se o cupom está ativo e válido
-            if (cupom.Ativo != true || (cupom.DataValidade.HasValue && cupom.DataValidade.Value < DateTime.Now || cupom.LimiteUso == 0))
+            // Verifica se o cupom está ativo
+            if (cupom.Ativo != true || (cupom.DataValidade.HasValue && cupom.DataValidade.Value < DateTime.Now))
             {
                 return BadRequest("Cupom inválido ou expirado.");
             }
 
-            // Verifica se o carrinho está vazio
+            // Verifica se o limite de uso foi atingido
+            var usosDoCupom = await _context.CuponsCarrinhos.CountAsync(cc => cc.CupomId == cupomId);
+            if (cupom.LimiteUso.HasValue && usosDoCupom >= cupom.LimiteUso.Value)
+            {
+                return BadRequest("Limite de uso do cupom atingido.");
+            }
+
+            // Calcula o valor total do carrinho considerando os descontos dos jogos
             var itensCarrinho = await _context.ItensCarrinhos.Where(i => i.CarrinhoId == carrinhoId).ToListAsync();
             if (!itensCarrinho.Any())
             {
                 return BadRequest("Carrinho vazio.");
             }
 
-            // Usa o valor total do carrinho já calculado no ItemCarrinhosController
-            var valorTotalCarrinho = carrinho.ValorTotal;
+            decimal valorTotalCarrinho = itensCarrinho.Sum(item => item.ValorTotal);
 
-            // Aplica o desconto do cupom no valor total do carrinho
-            var descontoCupom = valorTotalCarrinho * cupom.Desconto / 100;
-            var valorFinalComDesconto = valorTotalCarrinho - descontoCupom;
+            // Aplica o desconto do cupom
+            decimal desconto = (valorTotalCarrinho * cupom.Desconto) / 100;
+            decimal valorComDesconto = valorTotalCarrinho - desconto;
 
             // Atualiza o valor total do carrinho
-            carrinho.ValorTotal = valorFinalComDesconto;
+            carrinho.ValorTotal = valorComDesconto;
 
             // Salva a relação entre o cupom e o carrinho
             var cupomCarrinho = new CupomCarrinho
@@ -162,10 +168,9 @@ namespace APIDevSteam.Controllers
 
             return Ok(new
             {
-                ValorTotalOriginal = valorTotalCarrinho,
-                DescontoAplicado = descontoCupom,
-                ValorFinal = valorFinalComDesconto
+                ValorOriginal = valorTotalCarrinho,
+                Desconto = desconto,
+                ValorFinal = valorComDesconto
             });
         }
     }
-}
